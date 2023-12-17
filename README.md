@@ -1,4 +1,50 @@
-# CMake 工程实践指南
+学习链接：https://www.eglinux.com/cmake
+## CMake 学习 Step1
+**练习 1**
+
+指定最低版本号：
+cmake_minimum_required(VERSION 3.10)
+创建 project
+project(Turtorial)
+添加可执行文件：
+add_executable(Tutorial tutorial.cxx)
+
+编译执行：
+cmake -S . -B build（构建目录并运行 CMake）
+cmake --build build（构建步骤）
+
+**练习 2**
+
+设置特殊变量：
+set(CMAKE_CXX_STANDARD 11)
+设置 CPP 标准：
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+**练习 3**——添加版本号和配置头文件
+可以在 CMakelists 中定义变量。例如打印版本
+可以使用已配置的头文件。创建一个输入文件，其中包含一个或多个要替换的变量。变量有特殊语法，如 @var@。使用 configure_file 将输入文件复制给指定的输出文件，将变量替换为 CMakelists.txt 文件中 VAR 的值
+
+设置 version
+project(Tutorial VERSION 1.0)
+
+输入文件中定义版本号，生成输出文件
+configure_file(TutorialConfig.h.in TutorialConfig.h)
+
+生成的 include 文件在 build 中，所以 cmakelist 中指定 include 文件去哪里找：
+target_include_directories(Tutorial PUBLIC "${PROJECT_BINARY_DIR}")
+
+输入文件中定义版本号变量
+```cpp
+#define Tutorial_VERSION_MAJOR @Tutorial_VERSION_MAJOR@
+#define Tutorial_VERSION_MINOR @Tutorial_VERSION_MINOR@
+```
+
+文件中 include 对应的头文件后直接使用变量即可
+```cpp
+std::cout << argv[0] << " Version " << Tutorial_VERSION_MAJOR << "." << Tutorial_VERSION_MINOR << std::endl;
+```
+
+<!-- # CMake 工程实践指南
 
 
 本仓库是我(公众号：Eglinux)为了配合出 CMake 视频教程而建立的仓库，旨在记录一些 CMake 的基础知识以及视频教程中用到的例子。
@@ -83,4 +129,4 @@ CMake 学习交流群（如果二维码失效，请加我微信：eglinuxer，�
 
 ## 3. 其他
 
-其他未尽事宜，待后续补充。
+其他未尽事宜，待后续补充。 -->
