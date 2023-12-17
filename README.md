@@ -134,6 +134,10 @@ cmake -S . -B build -DUSE_MYMATH=OFF
 cmake --build build
 ```
 
+思考题：为什么在 USE_MYMATH 选项之后配置 TutorialConfig.h.in 很重要？如果我们将两者倒置会发生什么？
+
+答案：我们配置之后是因为 TutorialConfig.h.in 使用了 USE_MYMATH 的值。如果我们在调用 option() 之前配置文件，我们将不会使用 USE_MYMATH 的预期值。
+
 <!-- # CMake 工程实践指南
 
 
