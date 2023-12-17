@@ -229,6 +229,194 @@ target_compile_options(tutorial_compiler_flags
 )
 ```
 
+## Step 5 安装和测试
+
+**练习 1** 安装规则
+使用 install() 命令指定安装规则。
+- 对于 MathFunctions 希望将库和头文件安装到 lib 和 include 目录
+- 对于 Tutorial 可执行我呢见，将可执行文件和配置的头文件分别安装到 bin 和 include 目录
+
+在 MathFunctions/CMakeLists 中，注意通过 set 指定的变量需要在 `${}` 中使用！！！
+```cmake
+set(installable_libs MathFunctions tutorial_compiler_flags)
+install(
+    TARGETS
+        ${installable_libs}
+    DESTINATION
+        lib
+)
+install(
+    FILES
+        MathFunctions.h
+    DESTINATION
+        include
+)
+```
+
+主文件夹 CMakeList 中：
+```cmake
+install(
+    TARGETS
+        Tutorial
+    DESTINATION
+        bin
+)
+
+install(
+    FILES
+        "${PROJECT_BINARY_DIR}/TutorialConfig.h"
+    DESTINATION
+        include
+)
+```
+注意 Tutorial Config.h 位于 PROJECT_BINARY_DIR 中
+
+安装命令：
+```shell
+cmake --install build
+```
+对于多配置工具，不要忘记使用 `--config` 参数来指定配置。
+```shell
+cmake --install build --config Release
+```
+如果使用 `IDE`，只需构建 `INSTALL` 目标。您可以从命令行构建相同的安装目标，如下所示：
+```shell
+cmake --build build --target install --config Debug
+```
+指定文件安装根目录：
+```shell
+cmake --install build --prefix "/home/myuser/installdir"
+```
+
+**练习 2** 测试支持
+CTest 进行项目测试。通过 add_test() 添加测试。
+
+最外层 CMakeList 中开启测试
+enable_testing()
+
+基本测试
+add_test(NAME Runs COMMAND Tutorial 25)
+
+Usage 测试，同时使用 PASS_REGULAR_EXPRESSION 进行模式匹配
+```cmake
+add_test(NAME Usage COMMAND Tutorial)
+set_tests_properties(Usage
+  PROPERTIES PASS_REGULAR_EXPRESSION "Usage:.*number"
+  )
+```
+
+定义 function 进行大量同质化测试
+```cmake
+function(do_test target arg result)
+  add_test(NAME Comp${arg} COMMAND ${target} ${arg})
+  set_tests_properties(Comp${arg}
+    PROPERTIES PASS_REGULAR_EXPRESSION ${result}
+    )
+endfunction()
+
+# do a bunch of result based tests
+do_test(Tutorial 4 "4 is 2")
+do_test(Tutorial 9 "9 is 3")
+do_test(Tutorial 5 "5 is 2.236")
+do_test(Tutorial 7 "7 is 2.645")
+do_test(Tutorial 25 "25 is 5")
+do_test(Tutorial -25 "-25 is (-nan|nan|0)")
+do_test(Tutorial 0.0001 "0.0001 is 0.01")
+```
+
+构建并运行：
+进入构建目录（build）重建应用程序，运行 ctest 可执行文件 ctest -N
+```shell
+<PATH_to_proj>/Step5/build$ ctest -N
+Test project /home/zhangkg/BUAA_undergraduate/4Senior/study_cmake/tutorial/Step5/build
+  Test  #1: Runs
+  Test  #2: Usage
+  Test  #3: tt
+  Test  #4: Comp4
+  Test  #5: Comp9
+  Test  #6: Comp5
+  Test  #7: Comp7
+  Test  #8: Comp25
+  Test  #9: Comp-25
+  Test #10: Comp0.0001
+
+Total Tests: 10
+```
+
+## Step 6 添加测试仪表盘
+
+启用 CTest 进行测试，向 CDash 提交仪表盘
+使用 CTestConfig.cmake 文件配置测试，包含：
+- 项目名称
+- 项目“晚上”开始时间
+	- 项目的 24 小时的起始时间
+- 提交生成的文档到 CDash 实际的 URL
+
+CTestConfig.cmake
+```cmake
+set(CTEST_PROJECT_NAME "CMakeTutorial")
+set(CTEST_NIGHTLY_START_TIME "00:00:00 EST")
+
+set(CTEST_DROP_METHOD "http")
+set(CTEST_DROP_SITE "my.cdash.org")
+set(CTEST_DROP_LOCATION "/submit.php?project=CMakeTutorial")
+set(CTEST_DROP_SITE_CDASH TRUE)
+```
+
+将外层目录的 enable_testing 换成 CTest
+include(CTest)
+
+运行命令：
+构建生成目录：
+cmake -S . -B build
+进入 build 目录进行测试：
+cd build/
+```shell
+<Path_to_proj>/build$ ctest -D Experimental
+   Site: zkg
+   Build name: Linux-c++
+Create new tag: 20231217-2158 - Experimental
+Configure project
+   Each . represents 1024 bytes of output
+    . Size of output: 0K
+Build project
+   Each symbol represents 1024 bytes of output.
+   '!' represents an error and '*' a warning.
+    . Size of output: 0K
+   0 Compiler errors
+   0 Compiler warnings
+Test project /home/zhangkg/BUAA_undergraduate/4Senior/study_cmake/tutorial/Step6/build
+    Start 1: Runs
+1/9 Test #1: Runs .............................   Passed    0.00 sec
+    Start 2: Usage
+2/9 Test #2: Usage ............................   Passed    0.00 sec
+    Start 3: Comp4
+3/9 Test #3: Comp4 ............................   Passed    0.00 sec
+    Start 4: Comp9
+4/9 Test #4: Comp9 ............................   Passed    0.00 sec
+    Start 5: Comp5
+5/9 Test #5: Comp5 ............................   Passed    0.00 sec
+    Start 6: Comp7
+6/9 Test #6: Comp7 ............................   Passed    0.00 sec
+    Start 7: Comp25
+7/9 Test #7: Comp25 ...........................   Passed    0.00 sec
+    Start 8: Comp-25
+8/9 Test #8: Comp-25 ..........................   Passed    0.00 sec
+    Start 9: Comp0.0001
+9/9 Test #9: Comp0.0001 .......................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =   0.01 sec
+Performing coverage
+ Cannot find any coverage files. Ignoring Coverage request.
+Submit files
+   SubmitURL: http://my.cdash.org/submit.php?project=CMakeTutorial
+```
+
+这里使用 ctest -N 也可以
+
+
 <!-- # CMake 工程实践指南
 
 
