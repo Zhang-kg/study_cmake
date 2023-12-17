@@ -138,6 +138,52 @@ cmake --build build
 
 答案：我们配置之后是因为 TutorialConfig.h.in 使用了 USE_MYMATH 的值。如果我们在调用 option() 之前配置文件，我们将不会使用 USE_MYMATH 的预期值。
 
+
+## Step 3 给库添加使用要求
+
+**第一步** Step 2 中我们可以选择性链接 MathFunction 了，但是同时也要在主文件的 CMakeList 中添加很多的信息，导致主文件夹中的 CMakeLists 越来越满。从 CMake 2.x 到 CMake 3.x 开始是普通 CMake 到 Modern CMake 的转变，也是 directory-oriented CMake 到 target-oriented CMake 的转变。
+target 类比一个对象，properties 就是对象的属性（成员函数、成员变量），public private 是属性的访问控制权限。
+
+在 MathFunctions 库中的 CMakeList 中自己 include 自己：
+```cmake
+target_include_directories(MathFunctions
+    INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+```
+CMAKE_CURRENT_SOURCE_DIR 是当前 DIR
+
+主文件夹 CMakeList 不需要设置 EXTRA_INCLUDES
+```cmake
+if(USE_MYMATH)
+    add_subdirectory(MathFunctions)
+    list(APPEND EXTRA_LIBS MathFunctions)
+endif()
+target_include_directories(Tutorial
+    PUBLIC
+        "${PROJECT_BINARY_DIR}"
+)
+```
+
+这种方式下，只需要 target_link_libraries 就可以使用库。在传统方式下，手动指定库的依赖关系会变得非常复杂。
+
+**练习 2**
+使用 INTERFACE 库来指定 C++ 标准
+CMake 中的 interface 库是一个空的库，没有任何源代码，同时定义了一组接口（API）以及链接其他库的依赖关系。
+
+生成器表达式在 CMake 生成构建系统的时候根据不同配置动态生成特定的内容。
+1. 条件链接：同一个编译目标，debug 和 release 版本链接不同的库文件
+2. 条件定义，针对不同编译器定义不同的宏
+
+实现这个目标的方式就是使用生成器表达式，这是在编译时自动生成的，根据条件确定是否生成。
+
+生成器表达式的格式如 `$<>` 中间的是条件，生成器表达式可以嵌套。
+生成器表达式支持的常用操作：
+- 布尔表达式：逻辑运算符、字符串比较、变量查询
+- 字符串值生成器表达式：条件表达式、
+
+
+
 <!-- # CMake 工程实践指南
 
 
