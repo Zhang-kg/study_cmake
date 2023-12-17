@@ -183,6 +183,51 @@ CMake 中的 interface 库是一个空的库，没有任何源代码，同时定
 - 字符串值生成器表达式：条件表达式、
 
 
+## Step 4
+
+**练习 1** 使用接口库定义 C++ 标准
+
+删除主目录 CMakeLists 中的 C++ 标准：
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+主目录 CMakeLists 中设置一个 interface 库，interface 库中没有任何源代码，仅仅设置一个标准
+add_library(tutorial_compiler_flags INTERFACE)
+target_compile_features(tutorial_compiler_flags INTERFACE cxx_std_11)
+
+主目录 CMakeLists 中和 MathFunctions 库将 interface 库添加到 Tutorial 和 MathFunctions 中
+target_link_libraries(Tutorial PUBLIC ${EXTRA_LIBS} tutorial_compiler_flags)
+target_link_libraries(MathFunctions tutorial_compiler_flags)
+
+**练习 2** 使用生成式表达式添加编译警告标志
+有条件地添加编译警告。
+由于需要使用生成式表达式，所以设置最小的 CMake 版本为 3.15
+cmake_minimum_required(VERSION 3.15)
+
+确定系统使用哪个编译器来构建（警告标志根据编译器的不同而不同）
+通过 COMPILE_LANG_AND_ID 生成式表达式完成，将结果设置在 gcc_like_cxx 和 msvc_cxx 中：
+set(gcc_like_cxx "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>")
+set(msvc_cxx "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
+>这里可能是说如果使用的编译器是 xxx 其中之一，则是 gcc_like_cxx；如果是 xxx 其中之一，则是 msvc_cxx 编译器
+
+给项目增加编译器警告标志，使用上面定义的 gcc_like_cxx 和 msvc_cxx 判断添加什么标志：
+```cmake
+target_compile_options(tutorial_compiler_flags
+    INTERFACE
+        "$<${gcc_like_cxx}:-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused>"
+        "$<${msvc_cxx}:-W3>"
+)
+```
+> 所有的编译选项现在都交给了 inference 库 tutorial_compiler_flags，所以这里通过也将编译选项交给库
+
+只希望在构建期间使用这些编译选项（debug 版本），消费者不能看到编译警告（release 版本）
+```cmake
+target_compile_options(tutorial_compiler_flags
+    INTERFACE
+    "$<${gcc_like_cxx}:$<BUILD_INTERFACE:-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused>>"
+    "$<${msvc_cxx}:$<BUILD_INTERFACE:-W3>>"
+)
+```
 
 <!-- # CMake 工程实践指南
 
