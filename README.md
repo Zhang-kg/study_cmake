@@ -44,6 +44,96 @@ target_include_directories(Tutorial PUBLIC "${PROJECT_BINARY_DIR}")
 std::cout << argv[0] << " Version " << Tutorial_VERSION_MAJOR << "." << Tutorial_VERSION_MINOR << std::endl;
 ```
 
+## Step 2 添加一个库
+
+**练习 1** 添加一个库
+
+使用 add_library 指定应由哪些源文件构成库。
+
+可以使用一个或者多个子目录组织项目。
+专门为库创建子目录，可以添加一个新的 CMakeLists.txt 一个或者多个源文件。
+顶级 CmakeList 中使用 add_subdirectory
+
+创建库后，通过 target_include_directories 和 target_link_libraries 连接到我们的可执行目标。
+
+子目录中添加 library，并设置库的源文件
+add_library(MathFunctions mysqrt.cxx)
+
+使用新库，顶级 CMakeList 中设置：
+```
+add_subdirectory(MathFunctions)
+```
+
+链接新库到可执行文件
+target_link_libraries(Tutorial PUBLIC MathFunctions)
+
+指定库头文件：
+```cmake
+target_include_directories(Tutorial
+    PUBLIC
+        "${PROJECT_BINARY_DIR}"
+        "${PROJECT_SOURCE_DIR}/MathFunctions"
+)
+```
+
+**练习 2** 将库设置为可选
+
+使用 option() 命令实现
+
+设置一个变量，可以修改：
+```cmake
+option(USE_MYMATH "Use tutorial provided math implementation" ON)
+```
+
+使构建和链接 Math 库成为一个条件
+```cmake
+if(USE_MYMATH) 
+	add_subdirectory(MathFunctions) 
+	list(APPEND EXTRA_LIBS MathFunctions) 
+	list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/MathFunctions") 
+endif()
+```
+
+将 target_link_libraries 替换为 EXTRA_LIBS，**注意使用变量符号**
+```cmake
+target_link_libraries(Tutorial
+    PUBLIC
+        ${EXTRA_LIBS}
+)
+```
+
+将 target_include_directories 替换，同样使用变量符号：
+```cmake
+target_include_directories(Tutorial
+    PUBLIC
+        "${PROJECT_BINARY_DIR}"
+        ${EXTRA_INCLUDES}
+)
+```
+
+为了使 Cmake 变量在 源代码中可以知晓，在 TutorialConfig.h.in 中使用如下方式：
+```cpp
+#cmakedefine USE_MYMATH
+```
+
+进而源代码中这样启动和关闭 Math 库：
+```cpp
+#ifdef USE_MYMATH
+    #include "MathFunctions.h"
+#endif
+#ifdef USE_MYMATH
+    const double outputValue = mysqrt(inputValue);
+#else
+    const double outputValue = sqrt(inputValue);
+#endif
+```
+
+编译：
+```shell
+cmake -S . -B build -DUSE_MYMATH=OFF
+cmake --build build
+```
+
 <!-- # CMake 工程实践指南
 
 

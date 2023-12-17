@@ -10,7 +10,7 @@ double mysqrt(double x)
   double result = x;
 
   // do ten iterations
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 20; ++i) {
     if (result <= 0) {
       result = 0.1;
     }
